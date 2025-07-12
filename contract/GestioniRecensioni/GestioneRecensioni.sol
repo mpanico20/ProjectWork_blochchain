@@ -9,22 +9,25 @@ contract GestioneRecensioni {
     
     // Enumerazione per definire gli stati della recensione
     enum Stato {
-        INSERITA,    // 00 - Recensione appena inserita
-        MODIFICATA,  // 01 - Recensione modificata
-        CANCELLATA   // 10 - Recensione cancellata (equivale a 2 in decimale)
+        INSERITA,    
+        MODIFICATA,  
+        CANCELLATA   
     }
     
+    struct Risposta {
+        address hotel;
+        string cidRisp;       // CID IPFS per il contenuto della risposta
+        uint256 timestamp;    
+    }
+
     // Struttura per memorizzare i dati di una recensione
     struct Recensione {
-        string cidIPFS;           // CID IPFS della recensione
+        string cidIPFS;             // CID IPFS della recensione
         string cidIPFS_2; 
-        bool sentiment;           // true = positiva, false = negativa (non modificabile)
+        bool sentiment;             // true = positiva, false = negativa (non modificabile)
         uint256 timestampCreazione; // Timestamp di creazione
-        Stato stato;              // Stato attuale della recensione
+        Stato stato;                // Stato attuale della recensione
         bytes32 hashVC;             //Hash vc dell'hotel
-        //address hotel;            // Indirizzo dell'hotel recensito
-
-        //bool esiste;              // Flag per verificare se la recensione esiste
     }
 
     address public admin;
@@ -35,6 +38,13 @@ contract GestioneRecensioni {
      // Mapping per tenere traccia delle recensioni per hotel
     mapping(address => bytes32[]) public recensioniPerHotel;
 
+    
+    // mapping per le risposte
+     mapping(string => Risposta) public risposte;
+
+    
+
+    event RispostaInserita(string cidRecensione, string cidRisposta);
     // Costanti per la validazione
     uint256 public constant TEMPO_MODIFICA = 24 hours; // 24 ore in secondi
     
@@ -81,7 +91,7 @@ contract GestioneRecensioni {
 
          // Validazione del CID IPFS (non deve essere vuoto)
         require(bytes(_cidIPFS).length > 0, "CID IPFS non puo essere vuoto");
-
+        require (recensioneHotel[_hashVC].timestampCreazione == 0, "Recensione gia inserita");
         //crea nuova recensione 
         recensioneHotel[_hashVC]= Recensione({
             cidIPFS: _cidIPFS,
@@ -175,7 +185,7 @@ contract GestioneRecensioni {
             } else if (recensioneHotel[recensioni[i]].stato == Stato.INSERITA){
                 cids[i] = recensioneHotel[recensioni[i]].cidIPFS;
             }else if(recensioneHotel[recensioni[i]].stato == Stato.CANCELLATA){
-                if(keccak256(bytes(recensioneHotel[recensioni[i]].cidIPFS_2)) != keccak256(bytes(""))){
+                if(bytes(recensioneHotel[recensioni[i]].cidIPFS_2).length > 0){
                     cids[i] = recensioneHotel[recensioni[i]].cidIPFS_2;
                 }else{
                     cids[i] = recensioneHotel[recensioni[i]].cidIPFS;
@@ -185,4 +195,39 @@ contract GestioneRecensioni {
         return cids;
     }
 
+    function inserisciRisposta(
+        string memory _cidIPFS,
+        string memory _cidRisp,
+        address _hotelAdd
+        ) public onlyAdmin {
+         // Validazione del CID IPFS (non deve essere vuoto)
+        require (risposte[_cidIPFS].hotel == address(0), "Risposta gia inserita");
+        require(bytes(_cidRisp).length > 0, "CID IPFS non puo essere vuoto");
+        bytes32[] memory recensioni = recensioniPerHotel[_hotelAdd];
+        uint256 l = recensioni.length;
+        for (uint256 i = 0; i<l; i++){
+            if(recensioneHotel[recensioni[i]].stato == Stato.MODIFICATA){
+                if (keccak256(bytes(recensioneHotel[recensioni[i]].cidIPFS_2)) == keccak256(bytes (_cidIPFS))){
+                risposte[_cidIPFS] = Risposta({
+                hotel: _hotelAdd,
+                cidRisp: _cidRisp,
+                timestamp: block.timestamp
+                });
+                emit RispostaInserita(_cidIPFS, _cidRisp);
+            }}
+            else if(recensioneHotel[recensioni[i]].stato == Stato.INSERITA){
+                    if (keccak256(bytes(recensioneHotel[recensioni[i]].cidIPFS)) == keccak256(bytes (_cidIPFS))){
+                    risposte[_cidIPFS] = Risposta({
+                    hotel: _hotelAdd,
+                    cidRisp: _cidRisp,
+                    timestamp: block.timestamp
+                    });
+                    emit RispostaInserita(_cidIPFS, _cidRisp);
+                }
+            }   
+        }
+    }
+    function getRisposta(string memory _cidRecensione) public view returns (Risposta memory) {
+        return risposte[_cidRecensione];
+    }
 }

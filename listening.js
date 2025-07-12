@@ -6,10 +6,10 @@ const { assertBytes } = require('ethereum-cryptography/utils');
 const web3 = new Web3('ws://127.0.0.1:7545');
 
 // Load ABI
-const abi = JSON.parse(fs.readFileSync('GestioneRecensioniAbi.json', 'utf8'));
+const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0x88f0283DA803225B073481941558CcEAcCfECa5A';
+const contractAddress = '0xAc59a723c2ab90e06EF39E5fc0E160f9a68677F7';
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
@@ -22,6 +22,10 @@ async function listen() {
     contract.events.RecensioneModificata()
     .on('data', (event) => {
         console.log('Modified Event:', event.returnValues);
+    });
+    contract.events.RispostaInserita()
+    .on('data', (event) => {
+        console.log('Answer Event:', event.returnValues);
     });
 
     
