@@ -10,6 +10,12 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "did-jwt": "^8.0.17",
+    "did-jwt-vc": "^4.0.15",
+    "did-resolver": "^4.1.0",
+    "ethr-did": "^3.0.38",
+    "ethr-did-resolver": "^11.0.4",
+    "jsonwebtoken": "^9.0.2",
     "solc": "^0.8.0",
     "web3": "^4.16.0"
   }
