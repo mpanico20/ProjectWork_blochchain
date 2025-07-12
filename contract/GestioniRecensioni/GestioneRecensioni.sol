@@ -26,6 +26,8 @@ contract GestioneRecensioni {
 
         //bool esiste;              // Flag per verificare se la recensione esiste
     }
+
+    address public admin;
  
     //mappa hash vc dell'hotel alla recensione
     mapping(bytes32 => Recensione) public recensioneHotel;
@@ -52,8 +54,15 @@ contract GestioneRecensioni {
     /**
      * @dev Costruttore del contratto
      */
-      constructor() { }
+      constructor() {
+        admin = msg.sender;
+       }
 
+    // Restringe alcune azioni solo all'admin
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can perform this action");
+        _;
+    }
 
      /**
      * @dev Inserisce una nuova recensione
@@ -68,7 +77,7 @@ contract GestioneRecensioni {
         bool _sentiment,
         bytes32 _hashVC, 
         address _hotelAdd
-        ) public{
+        ) public onlyAdmin {
 
          // Validazione del CID IPFS (non deve essere vuoto)
         require(bytes(_cidIPFS).length > 0, "CID IPFS non puo essere vuoto");
@@ -98,7 +107,7 @@ contract GestioneRecensioni {
      * @param _hashVC hash della vc rilasciata dall'hotel
      * @param _nuovoCID nuovo cid della recensione
      */
-    function modificaRecensione(bytes32 _hashVC, string memory _nuovoCID) public {
+    function modificaRecensione(bytes32 _hashVC, string memory _nuovoCID) public onlyAdmin {
         require(recensioneHotel[_hashVC].stato != Stato.CANCELLATA, "Recensione cancellata!");
         require(recensioneHotel[_hashVC].stato != Stato.MODIFICATA, "Recensione precedentemente modificata!");
         require(block.timestamp <= recensioneHotel[_hashVC].timestampCreazione + TEMPO_MODIFICA, "Tempo per la modifica scaduto");
@@ -115,7 +124,7 @@ contract GestioneRecensioni {
      * @dev Eliminare una recensione
      * @param _hashVC hash della vc rilasciata dall'hotel
      */
-     function eliminaRecensione(bytes32 _hashVC) public returns (bool) {
+     function eliminaRecensione(bytes32 _hashVC) public onlyAdmin returns (bool) {
         require(recensioneHotel[_hashVC].stato != Stato.CANCELLATA, "Recensione precedentemente cancellata!");
         recensioneHotel[_hashVC].stato = Stato.CANCELLATA;
         return true;
@@ -156,7 +165,7 @@ contract GestioneRecensioni {
      * @param _hotelAdd address dell'hotel di cui voglio vedere le recensioni
      * @return cids cid delle recensioni associate ad un hotel
      */
-    function visualizzaRecensioniHotel(address _hotelAdd) public view returns (string[] memory) {
+    function visualizzaRecensioniHotel(address _hotelAdd) public view onlyAdmin returns (string[] memory) {
         bytes32[] memory recensioni = recensioniPerHotel[_hotelAdd];
         uint256 l = recensioni.length;
         string[] memory cids = new string[](l);
