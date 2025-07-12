@@ -13,6 +13,35 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const { exit } = require('process');
 const crypto = require('crypto');
+const axios = require('axios');
+const FormData = require('form-data');
+
+// Connect to Ganache
+const web3 = new Web3('ws://127.0.0.1:7545');
+
+// Load ABI
+const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
+
+// Set contract address (use the one from deployment)
+const contractAddress = '0x0556E6222526F7cFDf5f0D0835532fA8E316AafE';
+
+const contract_gr = new web3.eth.Contract(abi, contractAddress);
+
+// ----- Direct upload function via HTTP POST -----
+async function uploadToIPFS(filePath) {
+  const form = new FormData();
+  form.append('file', fs.createReadStream(filePath));
+  const res = await axios.post('http://localhost:5001/api/v0/add', form, {
+    headers: form.getHeaders(),
+    maxBodyLength: Infinity,
+  });
+  let data = res.data;
+  if (typeof data === 'string') {
+    const lines = data.trim().split('\n');
+    data = JSON.parse(lines[lines.length - 1]);
+  }
+  return data.Hash;
+}
 
 async function createDID(address, privateKey, provider, chainID) {
     const ethrDid = new EthrDID({
@@ -50,9 +79,9 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
         const result = await verifyPresentation(vpJwt, didResolver);
 
         //Check on the subject
-        if(result.issuer != subject.did){
+        if(result.issuer != subject){
             console.log("The subject (user) and the issuer of the vp are not equal!");
-            exit;
+            return;
         }
 
         const decoded = jwt.decode(vpJwt, { complete: true });
@@ -63,12 +92,12 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
         //Check for the hotel's vc
         const verifiedVCh = await verifyCredential(vcs[0], didResolver);
         const verifiedVCb = await verifyCredential(vcs[1], didResolver);
-        if(verifiedVCh.issuer != issuer_h.did){
+        if(verifiedVCh.issuer != issuer_h){
             console.log("The hotel's vc is not signed correctly!");
-            exit;
-        } else if(verifiedVCb.issuer != issuer_b.did){
+            return;
+        } else if(verifiedVCb.issuer != issuer_b){
             console.log("The booking's vc is non signed correctly!");
-            exit;
+            return;
         }
         
         const decoded_h = jwt.decode(vcs[0], { complete: true});
@@ -76,9 +105,12 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
         const subjH = decoded_h.payload.vc.credentialSubject.id;
         const subjB = decoded_b.payload.vc.credentialSubject.id;
 
+        console.log(decoded_h.payload.vc.credentialSubject);
+        console.log(decoded_b.payload.vc.credentialSubject);
+
         if(result.issuer != subjH || result.issuer != subjB){
             console.log("The subject of the VC does not match the VP issuer!");
-            exit;
+            return;
         }
 
     
@@ -88,14 +120,11 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
         if (releaseDateStr) {
         const release_dateH = new Date(releaseDateStr);
         const twelveHoursLater = new Date(release_dateH.getTime() + 12 * 60 * 60 * 1000);
-        ///// ELIMINARE IL CONTENUTO IN NOW now attuale dichiarato su si puo eliminare sta sezione 
         const now = new Date("2025-07-15T23:45:00.000Z");
-        console.log(release_dateH.toISOString(), now.toISOString());
-        console.log(release_dateH.toDateString(), now.toDateString());
-
+        //const now = new Date();
         if (now < twelveHoursLater) {
             console.log("12 hours have not passed since hotel VC issuance!");
-            //exit;
+            return;
         } else console.log("12 hours have passed since hotel VC issuance!");
 
         } else {
@@ -105,11 +134,10 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
         // Check coherence between VC data Da modificare
         const hotelId_h = decoded_h.payload.vc.credentialSubject.Stay.Add_hotel;
         const hotelId_b = decoded_b.payload.vc.credentialSubject.Book.Add_hotel;
-        console.log(hotelId_b, hotelId_h);
 
         if (hotelId_b !== hotelId_h) {
             console.log("Hotel ID mismatch between booking and hotel VCs!");
-            //exit;
+            return;
         }
 
         const CheckIn_h = decoded_h.payload.vc.credentialSubject.Stay.CheckIn;
@@ -119,14 +147,14 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
 
         if (CheckIn_b !== CheckIn_h || CheckOut_b !== CheckOut_h) {
             console.log("Check-in/check-out dates do not match between VCs!" );
-            //exit;
+            return;
         } 
         const num_people_h = decoded_h.payload.vc.credentialSubject.Stay.Num_person;
         const num_people_b = decoded_b.payload.vc.credentialSubject.Book.Num_person;
-        console.log (num_people_b, num_people_h);
+        
         if (num_people_b !== num_people_h){
             console.log("Number of people do not match between VCs!" );
-            //exit;
+            return;
         }
 
         //Upload the file that contains the mapping between id and salt used
@@ -136,14 +164,14 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
         const mapIdHash = new Map(Object.entries(parseIdHash));
 
         const vcId = decoded_h.payload.vc.id;
-        console.log(vcId);
+        console.log(vcId); //ELIMINA
         if(mapIdHash.get(vcId) != null){
             console.log("Vc already used!");
             return;
         }
 
         const salt = await generateSalt();
-        console.log(salt);
+        console.log(salt); //ELIMINA
 
         mapIdHash.set(vcId, salt);
 
@@ -151,12 +179,9 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
 
         const combined = vcId + salt;
         const hash = Web3.utils.keccak256(combined);
-        console.log(combined, hash);
+        console.log(combined, hash); //ELIMINA
 
-        console.log(CheckIn_b, CheckIn_h, CheckOut_b, CheckOut_h);
         console.log("VP and VCs validated successfully!");
-
-        console.log("The vcs are:", subjB);
 
         return hash;
 
@@ -236,7 +261,19 @@ async function main() {
     };
     const didResolver = new Resolver(ethrDidResolver.getResolver(resolverConfig));
 
-    await checkVP(userDID, hotelDID, bookingDID, vpJwt, didResolver);
+    const hash = await checkVP(userDID.did, hotelDID.did, bookingDID.did, vpJwt, didResolver);
+    console.log(hash);
+
+    const tempPath = "temp/temp.txt";
+    const review = "L'hotel in cui ho soggiornato mi è sembrato molto accogliente. Il personale è stato molto cordiale, ed in generale un ottima esperienza! Raccomando tantissimo.";
+    fs.writeFileSync(tempPath, review, 'utf-8');
+
+    console.log("Uploading review on IPFS...");
+    const cid = await uploadToIPFS(tempPath);
+    console.log("Cid ottenuto:", cid);
+
+    await contract_gr.methods.inserisciRecensione(cid, true, hash, hotelDID.address).send({ from: accounts[0], gas: 300000 });
+
 
   } catch(err) {
     console.log("Error:", err);
