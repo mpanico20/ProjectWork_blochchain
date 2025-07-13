@@ -30,7 +30,8 @@ function generaID(hotelName) {
 
 async function createVCHotel(issuer, subject, checkInDate, Num_person, add_hotel, hotelName) {
     //Calcolo il numero di notti che un utente soggionra
-    const CheckOut_date = new Date(); //Viene calolata al momento del checkOut
+    //const CheckOut_date = new Date(); //Viene calolata al momento del checkOut
+    const CheckOut_date = new Date("2025-07-11");
     const release_date = new Date();
     checkInDate.setHours(0, 0, 0, 0);
     CheckOut_date.setHours(0, 0, 0, 0);
@@ -84,11 +85,11 @@ async function main() {
 
     //Constants name. To change if want to use other users or hotels
     const hotelName = "Hotel California";
-    const nameUser = "Marco";
+    const nameUser = "Alessia";
 
     //User Marco data
-    const userAccount = accounts[3];
-    const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac";
+    const userAccount = accounts[4];
+    const privateKeyUser = "0xfa74c2c8f64e2204ce9e090fe232bfdf8a6f826582f0cdcb57cc7510e407a74b";
 
     //Hotel data 
     const hotelAccount = accounts[1];
