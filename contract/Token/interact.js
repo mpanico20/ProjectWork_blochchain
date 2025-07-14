@@ -8,7 +8,7 @@ const web3 = new Web3('http://127.0.0.1:7545');
 const abi = JSON.parse(fs.readFileSync('MyTokenAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0x3fc2869efaC3089D8eaEb55DE80E517bcc1D30Dd';
+const contractAddress = '0xD2b6117eceF7C62685AD91A54B38Eb2A050Fea57';
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
@@ -38,7 +38,7 @@ async function interactWithContract() {
         const buono = {
             codice: codiceBuono,
             valore: '10%',             
-            emessoDa: "Sistema di recensioni",
+            emittente: "Sistema di recensioni",
         };
          console.log('Buono sconto generato:', buono);
     }catch (error) {
