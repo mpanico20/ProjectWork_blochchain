@@ -1,5 +1,6 @@
 const { Web3 } = require('web3');
 const fs = require('fs');
+const axios = require('axios');
 
 // Connect to Ganache
 const web3 = new Web3('ws://127.0.0.1:7545');
@@ -8,9 +9,27 @@ const web3 = new Web3('ws://127.0.0.1:7545');
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0xa4Ac98F855cec84e0Ed5a6088Ae5ad8EFF3C9530';
+const contractAddress = '0x6f284790EFd756e93e81B7F10e061255DfeFbDE9';
 
 const contract = new web3.eth.Contract(abi, contractAddress);
+
+// ----- Direct download function via HTTP POST -----
+async function downloadFromIPFS(cid, outputPath) {
+  const res = await axios.post(
+    'http://localhost:5001/api/v0/cat',
+    null,
+    {
+      params: { arg: cid },
+      responseType: 'stream',
+    }
+  );
+  return new Promise((resolve, reject) => {
+    const writer = fs.createWriteStream(outputPath);
+    res.data.pipe(writer);
+    writer.on('finish', resolve);
+    writer.on('error', reject);
+  });
+}
 
 
 async function main() {
@@ -23,23 +42,47 @@ async function main() {
         const hotelAccount = accounts[1];
 
         const cids = await contract.methods.visualizzaRecensioniAttive(hotelAccount).call();
+        let pos = 0;
+        let negative = 0;
+        let recPos = [];
+        let recNeg = [];
 
-        //Upload the file that contains the mapping between id and salt used
-        const fileIdPath = "DB/cacheDB.json";
-        const idHashFile = fs.readFileSync(fileIdPath, 'utf-8');
-        const parseIdHash = JSON.parse(idHashFile);
-        const mapIdHash = new Map(Object.entries(parseIdHash));
 
         for(let i = 0; i < cids.length; i++){
-            const rec = mapIdHash.get(cids[i]);
+            const tempPath = "temp/temp.txt";
+            await downloadFromIPFS(cids[i], tempPath);
+            const raw = fs.readFileSync(tempPath, 'utf8');
+            const rec = JSON.parse(raw);
             const rcid = await contract.methods.getRisposta(cids[i]).call();
             if(rcid.cidRisp){
-                const recr = mapIdHash.get(rcid.cidRisp);
-                console.log(rec);
-                console.log("       ", recr);
+                await downloadFromIPFS(rcid.cidRisp, tempPath);
+                const raw1 = fs.readFileSync(tempPath, 'utf-8');
+                const rec1 = JSON.parse(raw1);
+
+                const obj = {rec: rec.rec, risp: rec1};
+                if(rec.sentiment){
+                    pos++;
+                    recPos.push(obj);
+                }else{
+                    negative++;
+                    recNeg.push(obj);
+                }
             } else {
-                console.log(rec);
+                if(rec.sentiment){
+                    pos++;
+                    recPos.push(rec.rec);
+                }else{
+                    negative++;
+                    recNeg.push(rec.rec);
+                }
             }
+        }
+        if(pos >= negative){
+            console.log("Recensioni Positive:\n", recPos);
+            console.log("Recensioni negative\n", recNeg);
+        } else {
+            console.log("Recensioni negative\n", recNeg);
+            console.log("Recensioni Positive:\n", recPos);
         }
 
     } catch (err){

@@ -22,8 +22,8 @@ const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRece
 const abi_t = JSON.parse(fs.readFileSync('contract/Token/MyTokenAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0xa4Ac98F855cec84e0Ed5a6088Ae5ad8EFF3C9530';
-const contractAddress_t = "0xC34FAf5949811B423cE8e5849c57C4c61A101d1e";
+const contractAddress = '0x6f284790EFd756e93e81B7F10e061255DfeFbDE9';
+const contractAddress_t = "0x40f4090D0158e58DA73fB75334211Da0876dd409";
 
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
 const contract_tk = new web3.eth.Contract(abi_t, contractAddress_t);
@@ -146,6 +146,14 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
             return;
         }
 
+        const release_dateH = decoded_h.payload.vc.credentialSubject.Stay.Release;
+        const release_dateB = decoded_b.payload.vc.credentialSubject.Book.Release;
+
+        if (release_dateH < release_dateB) {
+            console.log("Release date of hotel VC is before booking VC release date!");
+            return;
+        }
+
         //Upload the file that contains the mapping between id and salt used
         const fileIdPath = "DB/idHash.json";
         const idHashFile = fs.readFileSync(fileIdPath, 'utf-8');
@@ -193,11 +201,11 @@ async function main() {
     const provider = web3.currentProvider;
 
     //Constants name. To change if want to use other users or hotels
-    const nameUser = "Alessia";
+    const nameUser = "Marco";
 
     //User data
-    const userAccount = accounts[4];
-    const privateKeyUser = "0xfa74c2c8f64e2204ce9e090fe232bfdf8a6f826582f0cdcb57cc7510e407a74b";
+    const userAccount = accounts[3];
+    const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac";
 
     //Hotel data
     const hotelAccount = accounts[1];
@@ -226,7 +234,7 @@ async function main() {
     //Readaing the VCs
     const vpJwt = fs.readFileSync(userVP, 'utf-8');
 
-    const address_r = "0xEA75671faA5fF9AfE782b9E6455235727A060410"; // <-- replace with the DID contract address
+    const address_r = "0xCB0e1CaBe7FA1605d9e63f92d48f6EE072387A2f"; // <-- replace with the DID contract address
 
     // === CONFIGURATION OF THE RESOLVER ===
     const registryAddress = address_r;
@@ -250,9 +258,19 @@ async function main() {
     
 
     const tempPath = "temp/temp.txt";
-    //const review = "L'hotel in cui ho soggiornato mi è sembrato molto accogliente. Il personale è stato molto cordiale, ed in generale un ottima esperienza! Raccomando tantissimo.";
-    const review = "L'hotel non era il massimo!";
-    fs.writeFileSync(tempPath, review, 'utf-8');
+    const sentiment = false;
+    // const review = {rec: "L'hotel in cui ho soggiornato mi è sembrato molto accogliente. Il personale è stato molto cordiale, ed in generale un ottima esperienza! Raccomando tantissimo.",
+    //     sentiment: sentiment
+    // };
+    const review = { rec: "L'hotel non era il massimo!",
+    sentiment: sentiment};
+
+    if (review.rec.length < 20 || review.rec.length > 200) {
+        console.log("La recensione deve contenere tra 20 e 200 caratteri.");
+        return;
+    }
+
+    fs.writeFileSync(tempPath, JSON.stringify(review), 'utf-8');
 
     console.log("Uploading review on IPFS...");
     const cid = await uploadToIPFS(tempPath);

@@ -56,11 +56,11 @@ async function main() {
     //Constants name. To change if want to use other users or hotels
     const hotelName = "Hotel California";
     const bookingName = "Booking";
-    const nameUser = "Alessia";
+    const nameUser = "Marco";
 
     //User data
-    const userAccount = accounts[4];
-    const privateKeyUser = "0xfa74c2c8f64e2204ce9e090fe232bfdf8a6f826582f0cdcb57cc7510e407a74b";
+    const userAccount = accounts[3];
+    const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac";
 
     //Create User DID
     const userDID = await createDID(userAccount, privateKeyUser, provider, chainId);

@@ -32,6 +32,7 @@ async function createVCBooking(issuer, subject, checkInDate, checkOutDate, add_h
     //Calcola il numero di notti di un utente
     checkInDate.setHours(0, 0, 0, 0);
     checkOutDate.setHours(0, 0, 0, 0);
+    const release_date = new Date();
     const diffTime = checkOutDate - checkInDate;
     const num_notti = diffTime / (1000 * 60 * 60 * 24);
 
@@ -56,7 +57,8 @@ async function createVCBooking(issuer, subject, checkInDate, checkOutDate, add_h
             Num_notti: num_notti,
             CheckIn: checkInDate.toDateString(),
             CheckOut: checkOutDate.toDateString(),
-            Add_hotel: add_hotel
+            Add_hotel: add_hotel,
+            Release: release_date
           }
         }
       }
@@ -78,11 +80,11 @@ async function main() {
 
     //Constants name. To change if want to use other users or hotels
     const bookingName = "Booking";
-    const UserName = "Alessia";
+    const UserName = "Marco";
 
     //User data
-    const userAccount = accounts[4];
-    const privateKeyUser = "0xfa74c2c8f64e2204ce9e090fe232bfdf8a6f826582f0cdcb57cc7510e407a74b";
+    const userAccount = accounts[3];
+    const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac";
 
     //Booking data
     const bookingAccount = accounts[9];

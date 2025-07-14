@@ -1,1 +1,1 @@
-L'hotel non era il massimo!
+{"rec":"L'hotel non era il massimo!","sentiment":false}
