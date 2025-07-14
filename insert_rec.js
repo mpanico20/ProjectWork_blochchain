@@ -17,7 +17,7 @@ const FormData = require('form-data');
 // Connect to Ganache
 const web3 = new Web3('ws://127.0.0.1:7545');
 
-// Load ABI
+// Load ABI of the 2 contract
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
 const abi_t = JSON.parse(fs.readFileSync('contract/Token/MyTokenAbi.json', 'utf8'));
 
@@ -28,7 +28,7 @@ const contractAddress_t = "0x40f4090D0158e58DA73fB75334211Da0876dd409";
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
 const contract_tk = new web3.eth.Contract(abi_t, contractAddress_t);
 
-// ----- Direct upload function via HTTP POST -----
+//Direct upload function via HTTP POST
 async function uploadToIPFS(filePath) {
   const form = new FormData();
   form.append('file', fs.createReadStream(filePath));
@@ -44,7 +44,7 @@ async function uploadToIPFS(filePath) {
   return data.Hash;
 }
 
-// ---- Create the DID of the actors ----
+//Create the DID of the actors
 async function createDID(address, privateKey, provider, chainID) {
     const ethrDid = new EthrDID({
         identifier: address,
@@ -56,12 +56,12 @@ async function createDID(address, privateKey, provider, chainID) {
     return ethrDid;
 }
 
-
+//Generate the salt for the VC's id
 async function generateSalt(lenght = 32){
     return crypto.randomBytes(lenght).toString('hex');
 }
 
-
+//Check the User's VP for insert the review
 async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
 
     try {
@@ -73,6 +73,7 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
             return;
         }
 
+        //Decode the User VP and take the VC inside
         const decoded = jwt.decode(vpJwt, { complete: true });
 
         const vpPayload = decoded.payload;
@@ -89,14 +90,13 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
             return;
         }
         
+        //Decode the 2 VCs
         const decoded_h = jwt.decode(vcs[0], { complete: true});
         const decoded_b = jwt.decode(vcs[1], {complete: true});
         const subjH = decoded_h.payload.vc.credentialSubject.id;
         const subjB = decoded_b.payload.vc.credentialSubject.id;
 
-        console.log(decoded_h.payload.vc.credentialSubject);
-        console.log(decoded_b.payload.vc.credentialSubject);
-
+        //Check if the subject of the VCs is the same that presented the VP
         if(result.issuer != subjH || result.issuer != subjB){
             console.log("The subject of the VC does not match the VP issuer!");
             return;
@@ -109,18 +109,18 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
         if (releaseDateStr) {
         const release_dateH = new Date(releaseDateStr);
         const twelveHoursLater = new Date(release_dateH.getTime() + 12 * 60 * 60 * 1000);
-        const now = new Date("2025-07-15T23:45:00.000Z");
+        const now = new Date("2025-07-15T23:45:00.000Z"); //Used for test case
         //const now = new Date();
         if (now < twelveHoursLater) {
             console.log("12 hours have not passed since hotel VC issuance!");
             return;
-        } else console.log("12 hours have passed since hotel VC issuance!");
+        } else {};
 
         } else {
         console.log("Release date not found in Hotel VC:", decoded_h.vc.credentialSubject.Stay);
         }
 
-        // Check coherence between VC data Da modificare
+        // Check coherence between VC data
         const hotelId_h = decoded_h.payload.vc.credentialSubject.Stay.Add_hotel;
         const hotelId_b = decoded_b.payload.vc.credentialSubject.Book.Add_hotel;
 
@@ -160,15 +160,15 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
         const parseIdHash = JSON.parse(idHashFile);
         const mapIdHash = new Map(Object.entries(parseIdHash));
 
+        //Check if the id is already in the file
         const vcId = decoded_h.payload.vc.id;
-        console.log(vcId); //ELIMINA
         if(mapIdHash.get(vcId) != null){
             console.log("Vc already used!");
             return;
         }
 
+        //Generate the salt, add the mapping and save the changes
         const salt = await generateSalt();
-        console.log(salt); //ELIMINA
 
         mapIdHash.set(vcId, salt);
 
@@ -176,7 +176,6 @@ async function checkVP(subject, issuer_h, issuer_b, vpJwt, didResolver) {
 
         const combined = vcId + salt;
         const hash = Web3.utils.keccak256(combined);
-        console.log(combined, hash); //ELIMINA
 
         console.log("VP and VCs validated successfully!");
 
@@ -200,14 +199,16 @@ async function main() {
     const chainId = await web3.eth.getChainId();
     const provider = web3.currentProvider;
 
-    //Constants name. To change if want to use other users or hotels
+    const address_r = "0xCB0e1CaBe7FA1605d9e63f92d48f6EE072387A2f"; // <-- replace with the DID contract address
+
+    //Constants name. To change if want to use other users
     const nameUser = "Marco";
 
-    //User data
+    //User data. Change the accound and private key to use another user
     const userAccount = accounts[3];
     const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac";
 
-    //Hotel data
+    //Hotel data. Change the accound and private key to use another hotel
     const hotelAccount = accounts[1];
     const privateKeyHotel = "0x0b039446a2241a02d745abd0de558356aa8a2711631390ccfcf531b01dcde190";
 
@@ -225,7 +226,6 @@ async function main() {
     const bookingDID = await createDID(bookingAccount, privateKeyBooking, provider, chainId);
 
     console.log("User DID is:", userDID.did);
-    console.log("User address:",userDID.address);
     console.log("Hotel DID is:", hotelDID.did);
     console.log("Booking DID is:", bookingDID.did);
 
@@ -234,9 +234,7 @@ async function main() {
     //Readaing the VCs
     const vpJwt = fs.readFileSync(userVP, 'utf-8');
 
-    const address_r = "0xCB0e1CaBe7FA1605d9e63f92d48f6EE072387A2f"; // <-- replace with the DID contract address
-
-    // === CONFIGURATION OF THE RESOLVER ===
+    //Configuration of the resolver
     const registryAddress = address_r;
     const resolverConfig = {
         networks: [{
@@ -248,15 +246,18 @@ async function main() {
     };
     const didResolver = new Resolver(ethrDidResolver.getResolver(resolverConfig));
 
+    console.log("Checking the VP and VCs...");
+    //Check the VP. If ok take the hash generated
     const hash = await checkVP(userDID.did, hotelDID.did, bookingDID.did, vpJwt, didResolver);
 
+    //Check if the hash is null
     if(hash){
-        console.log(hash);
     } else {
         return;
     }
     
 
+    //Check the review. Uncomment for use different review
     const tempPath = "temp/temp.txt";
     const sentiment = false;
     // const review = {rec: "L'hotel in cui ho soggiornato mi è sembrato molto accogliente. Il personale è stato molto cordiale, ed in generale un ottima esperienza! Raccomando tantissimo.",
@@ -272,19 +273,26 @@ async function main() {
 
     fs.writeFileSync(tempPath, JSON.stringify(review), 'utf-8');
 
+    //Uploading the review and the sentiment on IPFS
     console.log("Uploading review on IPFS...");
     const cid = await uploadToIPFS(tempPath);
 
+    //Check if cid is null
     if(!cid){
         return;
     }
 
     console.log("Cid ottenuto:", cid);
 
+    console.log("Calling smart contract for insert the review...");
+
+    //Call smart contract to insert the review and give the user his token
     await contract_gr.methods.inserisciRecensione(cid, true, hash, hotelDID.address).send({ from: accounts[0], gas: 300000 });
+
+    console.log("Tranfer the token as reward...");
     await contract_tk.methods.transfer(accounts[0], userDID.address, web3.utils.toWei('0.1', 'ether')).send({ from: accounts[0], gas: 300000 });
 
-    // verifica il bilancio del cliente dopo il trasferimento
+    //Check the user balance after the transfer
     balance = await contract_tk.methods.balanceOf(userDID.address).call();
     console.log('Bilancio cliente::', web3.utils.fromWei(balance, 'ether'));
 

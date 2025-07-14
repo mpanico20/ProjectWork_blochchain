@@ -13,7 +13,7 @@ const contractAddress = '0x6f284790EFd756e93e81B7F10e061255DfeFbDE9';
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
-// ----- Direct download function via HTTP POST -----
+//Direct download function via HTTP POST
 async function downloadFromIPFS(cid, outputPath) {
   const res = await axios.post(
     'http://localhost:5001/api/v0/cat',
@@ -41,13 +41,14 @@ async function main() {
         //Hotel data
         const hotelAccount = accounts[1];
 
+        //Take the active review from the contract and initialize the variable
         const cids = await contract.methods.visualizzaRecensioniAttive(hotelAccount).call();
         let pos = 0;
         let negative = 0;
         let recPos = [];
         let recNeg = [];
 
-
+        //For each cid download the equivalent rec and sentiment and check for possible answers
         for(let i = 0; i < cids.length; i++){
             const tempPath = "temp/temp.txt";
             await downloadFromIPFS(cids[i], tempPath);
@@ -70,19 +71,49 @@ async function main() {
             } else {
                 if(rec.sentiment){
                     pos++;
-                    recPos.push(rec.rec);
+                    recPos.push({rec: rec.rec});
                 }else{
                     negative++;
-                    recNeg.push(rec.rec);
+                    recNeg.push({rec: rec.rec});
                 }
             }
         }
+
+        //check which reviews to show first based on sentiment
         if(pos >= negative){
-            console.log("Recensioni Positive:\n", recPos);
-            console.log("Recensioni negative\n", recNeg);
+            recPos.forEach((r, i) => {
+                if (typeof r === 'object' && r.rec) {
+                console.log(`${i + 1}. ${r.rec}`);
+                if (r.risp && r.risp.rec) {
+                console.log(`   ↳ Risposta: ${r.risp.rec}`);
+                }
+            }
+            });
+            recNeg.forEach((r, i) => {
+                if (typeof r === 'object' && r.rec) {
+                console.log(`${i + 1}. ${r.rec}`);
+                if (r.risp && r.risp.rec) {
+                console.log(`   ↳ Risposta: ${r.risp.rec}`);
+                }
+            }
+            });
         } else {
-            console.log("Recensioni negative\n", recNeg);
-            console.log("Recensioni Positive:\n", recPos);
+            recNeg.forEach((r, i) => {
+                if (typeof r === 'object' && r.rec) {
+                console.log(`${i + 1}. ${r.rec}`);
+                if (r.risp && r.risp.rec) {
+                console.log(`   ↳ Risposta: ${r.risp.rec}`);
+                }
+            }
+            });
+            recPos.forEach((r, i) => {
+                if (typeof r === 'object' && r.rec) {
+                console.log(`${i + 1}. ${r.rec}`);
+                if (r.risp && r.risp.rec) {
+                console.log(`   ↳ Risposta: ${r.risp.rec}`);
+                }
+            }
+            });
         }
 
     } catch (err){
