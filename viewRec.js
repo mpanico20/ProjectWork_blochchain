@@ -9,7 +9,7 @@ const web3 = new Web3('ws://127.0.0.1:7545');
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0x6f284790EFd756e93e81B7F10e061255DfeFbDE9';
+const contractAddress = '0x60BeCa1ce29f9A423689484052Ad7bAF7FB55229';
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 

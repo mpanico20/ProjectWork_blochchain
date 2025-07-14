@@ -49,11 +49,11 @@ async function main() {
     // Nomi costanti degli attori (hotel e booking) e dell’utente (Marco)
     const hotelName = "Hotel California";
     const bookingName = "Booking";
-    const nameUser = "Marco";
+    const nameUser = "Pasquale";
 
     // Account e chiave privata dell’utente Marco (accounts[3] di Ganache)
-    const userAccount = accounts[3];
-    const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac";
+    const userAccount = accounts[5];
+    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
 
     // Creazione del DID per Marco
     const userDID = await createDID(userAccount, privateKeyUser, provider, chainId);

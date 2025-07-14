@@ -1,1 +1,1 @@
-{"rec":"L'hotel non era il massimo!","sentiment":false}
+{"rec":"L'hotel è veramente sporco! E il personale davvero incompetente. Sconsigliato."}

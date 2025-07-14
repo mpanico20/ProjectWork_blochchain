@@ -11,7 +11,7 @@ const web3 = new Web3('ws://127.0.0.1:7545');
 
 // Caricamento dell'ABI del contratto e indirizzo
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
-const contractAddress = '0xa4Ac98F855cec84e0Ed5a6088Ae5ad8EFF3C9530';
+const contractAddress = '0x992165285F6CF05d03cFE7b153cfbAbba86f21DE';
 
 // Creazione dell'istanza del contratto
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
@@ -43,7 +43,7 @@ async function checkVPExists(vpJwt, expectedSubject) {
 
     // Verifica che il subject (issuer VP) corrisponda all'utente previsto
     const vpIssuer = decoded.payload.iss;
-    if (vpIssuer !== expectedSubject) {
+    if (vpIssuer !== expectedSubject.did) {
         console.log("Il subject (utente) e l'issuer della VP non coincidono!");
         return null;
     }
@@ -78,9 +78,9 @@ async function main() {
     const provider = web3.currentProvider;
 
     // Dati dell’utente che vuole cancellare la recensione
-    const nameUser = "Alessia";
-    const userAccount = accounts[4]; // L’utente Alessia usa il quinto account di Ganache
-    const privateKeyUser = "0xfa74c2c8f64e2204ce9e090fe232bfdf8a6f826582f0cdcb57cc7510e407a74b"; // Chiave privata associata
+    const nameUser = "Marco";
+    const userAccount = accounts[3]; // L’utente Alessia usa il quinto account di Ganache
+    const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac"; // Chiave privata associata
 
     // Creazione del DID per l’utente
     const userDID = await createDID(userAccount, privateKeyUser, provider, chainId);
@@ -94,7 +94,7 @@ async function main() {
     if (!hash) return; // Se non esiste hash, interrompi l'esecuzione
 
     // Chiamata alla funzione dello smart contract per cancellare la recensione
-    await contract_gr.methods.cancellaRecensione(hash).send({ from: accounts[0], gas: 300000 });
+    await contract_gr.methods.eliminaRecensione(hash).send({ from: accounts[0], gas: 300000 });
     console.log("Recensione cancellata con successo.");
 }
 

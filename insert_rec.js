@@ -22,8 +22,8 @@ const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRece
 const abi_t = JSON.parse(fs.readFileSync('contract/Token/MyTokenAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0x6f284790EFd756e93e81B7F10e061255DfeFbDE9';
-const contractAddress_t = "0x40f4090D0158e58DA73fB75334211Da0876dd409";
+const contractAddress = '0x60BeCa1ce29f9A423689484052Ad7bAF7FB55229';
+const contractAddress_t = "0x22224949051241c529417F31430A948cE2d4568c";
 
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
 const contract_tk = new web3.eth.Contract(abi_t, contractAddress_t);
@@ -202,11 +202,11 @@ async function main() {
     const address_r = "0xCB0e1CaBe7FA1605d9e63f92d48f6EE072387A2f"; // <-- replace with the DID contract address
 
     //Constants name. To change if want to use other users
-    const nameUser = "Marco";
+    const nameUser = "Pasquale";
 
     //User data. Change the accound and private key to use another user
-    const userAccount = accounts[3];
-    const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac";
+    const userAccount = accounts[5];
+    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
 
     //Hotel data. Change the accound and private key to use another hotel
     const hotelAccount = accounts[1];
@@ -260,11 +260,14 @@ async function main() {
     //Check the review. Uncomment for use different review
     const tempPath = "temp/temp.txt";
     const sentiment = false;
+    const review = {rec: "L'hotel è veramente sporco! Sconsigliato.",
+        sentiment: sentiment
+    };
     // const review = {rec: "L'hotel in cui ho soggiornato mi è sembrato molto accogliente. Il personale è stato molto cordiale, ed in generale un ottima esperienza! Raccomando tantissimo.",
-    //     sentiment: sentiment
-    // };
-    const review = { rec: "L'hotel non era il massimo!",
-    sentiment: sentiment};
+    //      sentiment: sentiment
+    //  };
+    //const review = { rec: "L'hotel non era il massimo!",
+    //sentiment: sentiment};
 
     if (review.rec.length < 20 || review.rec.length > 200) {
         console.log("La recensione deve contenere tra 20 e 200 caratteri.");
@@ -287,14 +290,14 @@ async function main() {
     console.log("Calling smart contract for insert the review...");
 
     //Call smart contract to insert the review and give the user his token
-    await contract_gr.methods.inserisciRecensione(cid, true, hash, hotelDID.address).send({ from: accounts[0], gas: 300000 });
+    await contract_gr.methods.inserisciRecensione(cid, sentiment, hash, hotelDID.address).send({ from: accounts[0], gas: 300000 });
 
     console.log("Tranfer the token as reward...");
     await contract_tk.methods.transfer(accounts[0], userDID.address, web3.utils.toWei('0.1', 'ether')).send({ from: accounts[0], gas: 300000 });
 
     //Check the user balance after the transfer
     balance = await contract_tk.methods.balanceOf(userDID.address).call();
-    console.log('Bilancio cliente::', web3.utils.fromWei(balance, 'ether'));
+    console.log('User balance::', web3.utils.fromWei(balance, 'ether'));
 
 
   } catch(err) {

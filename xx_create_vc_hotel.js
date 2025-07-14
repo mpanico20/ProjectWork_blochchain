@@ -88,11 +88,11 @@ async function main() {
 
     // === Parametri personalizzabili ===
     const hotelName = "Hotel California"; // Nome hotel (usato anche per path e tipo VC)
-    const nameUser = "Marco";             // Nome utente
+    const nameUser = "Pasquale";             // Nome utente
 
     // === Dati dell’utente ===
-    const userAccount = accounts[3]; // Account dell’utente su Ganache
-    const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac";
+    const userAccount = accounts[5]; // Account dell’utente su Ganache
+    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
 
     // === Dati dell’hotel ===
     const hotelAccount = accounts[1];

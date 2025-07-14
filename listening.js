@@ -11,7 +11,7 @@ const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRece
 const abi_t = JSON.parse(fs.readFileSync('contract/Token/MyTokenAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0x6f284790EFd756e93e81B7F10e061255DfeFbDE9';
+const contractAddress = '0x992165285F6CF05d03cFE7b153cfbAbba86f21DE';
 const contractAddress_t = "0x40f4090D0158e58DA73fB75334211Da0876dd409";
 
 const contract = new web3.eth.Contract(abi, contractAddress);
@@ -35,7 +35,10 @@ async function listen() {
     .on('data', (event) => {
         console.log('Tranfer Event:', event.returnValues);
     });
-    
+    contract.events.RispostaInserita()
+    .on('data', (event) => {
+        console.log('Ansewr Event:', event.returnValues);
+    });
 }
 
 listen().catch(console.error);

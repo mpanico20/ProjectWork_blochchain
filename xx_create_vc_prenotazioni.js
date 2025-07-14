@@ -85,11 +85,11 @@ async function main() {
 
     // Nomi simbolici (modificabili)
     const bookingName = "Booking"; // Nome della piattaforma Booking
-    const UserName = "Marco";      // Nome simbolico dell'utente
+    const UserName = "Pasquale";      // Nome simbolico dell'utente
 
     // Dati dell'utente (Marco)
-    const userAccount = accounts[3];
-    const privateKeyUser = "0x139a2d1597daee5e60cd2098e38f179224a364e7c36038025011a54644fd49ac";
+    const userAccount = accounts[5];
+    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
 
     // Dati della piattaforma Booking
     const bookingAccount = accounts[9];
