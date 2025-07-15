@@ -59,8 +59,7 @@ async function main() {
                 await downloadFromIPFS(rcid.cidRisp, tempPath);
                 const raw1 = fs.readFileSync(tempPath, 'utf-8');
                 const rec1 = JSON.parse(raw1);
-
-                const obj = {rec: rec.rec, risp: rec1};
+                const obj = {rec: rec.rec, risp: rec1.anw};
                 if(rec.sentiment){
                     pos++;
                     recPos.push(obj);
@@ -84,7 +83,7 @@ async function main() {
             recPos.forEach((r, i) => {
                 if (typeof r === 'object' && r.rec) {
                 console.log(`${i + 1}. ${r.rec}`);
-                if (r.risp && r.risp.rec) {
+                if (r.risp) {
                 console.log(`   ↳ Risposta: ${r.risp.rec}`);
                 }
             }
@@ -92,8 +91,8 @@ async function main() {
             recNeg.forEach((r, i) => {
                 if (typeof r === 'object' && r.rec) {
                 console.log(`${i + 1}. ${r.rec}`);
-                if (r.risp && r.risp.rec) {
-                console.log(`   ↳ Risposta: ${r.risp.rec}`);
+                if (r.risp) {
+                console.log(`   ↳ Risposta: ${r.risp}`);
                 }
             }
             });
@@ -101,16 +100,16 @@ async function main() {
             recNeg.forEach((r, i) => {
                 if (typeof r === 'object' && r.rec) {
                 console.log(`${i + 1}. ${r.rec}`);
-                if (r.risp && r.risp.rec) {
-                console.log(`   ↳ Risposta: ${r.risp.rec}`);
+                if (r.risp) {
+                console.log(`   ↳ Risposta: ${r.risp}`);
                 }
             }
             });
             recPos.forEach((r, i) => {
                 if (typeof r === 'object' && r.rec) {
                 console.log(`${i + 1}. ${r.rec}`);
-                if (r.risp && r.risp.rec) {
-                console.log(`   ↳ Risposta: ${r.risp.rec}`);
+                if (r.risp) {
+                console.log(`   ↳ Risposta: ${r.risp}`);
                 }
             }
             });

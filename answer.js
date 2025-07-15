@@ -20,7 +20,7 @@ const web3 = new Web3('ws://127.0.0.1:7545');
 // Load ABI of the 2 contract
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
 
-const contractAddress = '0x992165285F6CF05d03cFE7b153cfbAbba86f21DE';
+const contractAddress = '0x60BeCa1ce29f9A423689484052Ad7bAF7FB55229';
 
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
 
@@ -56,7 +56,7 @@ async function main() {
         //Check the review. Uncomment for use different review
         const tempPath = "temp/temp.txt";
 
-        const ansewr = { anw: "Non mi sono per niente offeso!"};
+        const ansewr = { anw: "Non mi sono per niente offeso! Secondo me menti."};
         
         if (ansewr.anw.length < 20 || ansewr.anw.length > 200) {
             console.log("La recensione deve contenere tra 20 e 200 caratteri.");
@@ -68,6 +68,7 @@ async function main() {
         //Uploading the review and the sentiment on IPFS
         console.log("Uploading answer on IPFS...");
         const cidr = await uploadToIPFS(tempPath);
+        console.log("Cid answer:", cidr);
 
         await contract_gr.methods.inserisciRisposta(cid, cidr, hotelAccount).send({ from: accounts[0], gas: 300000 });
     } catch(err){
@@ -75,3 +76,5 @@ async function main() {
     }
     
 }
+
+main().catch(console.error);
