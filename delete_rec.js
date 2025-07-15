@@ -14,7 +14,7 @@ const web3 = new Web3('HTTP://127.0.0.1:7545');
 
 //Load the ABI of the contract
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
-const contractAddress = '0xc2985daA8C89d12Ced11e4d5e57967F4EAE0Cf39';
+const contractAddress = '0x766dE0367C536136ED099Fb43Ad83391D9EB950E';
 
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
 
@@ -86,7 +86,7 @@ async function main() {
     const web3 = new Web3(providerUrl);
 
     //Address for DID contract
-    const address_r = "0xf1Db7CD3fE00D007a04e6987c50D18C260F54369";
+    const address_r = "0x900A2e2072f14D02dfd3950c0A6fabE105865F3A";
 
     // Retrieve account from Ganache
     const accounts = await web3.eth.getAccounts();

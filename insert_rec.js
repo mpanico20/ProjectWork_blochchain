@@ -21,8 +21,8 @@ const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRece
 const abi_t = JSON.parse(fs.readFileSync('contract/Token/MyTokenAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0xc2985daA8C89d12Ced11e4d5e57967F4EAE0Cf39';
-const contractAddress_t = "0x07dA6266FA4D74b5a8444CCa90B251CdC23c11eF";
+const contractAddress = '0x766dE0367C536136ED099Fb43Ad83391D9EB950E';
+const contractAddress_t = "0xE49f56886e29a4ab37017A634b60b9107283C272";
 
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
 const contract_tk = new web3.eth.Contract(abi_t, contractAddress_t);
@@ -199,14 +199,14 @@ async function main() {
     const provider = web3.currentProvider;
 
     //Adress for DID conrtacr
-    const address_r = "0xf1Db7CD3fE00D007a04e6987c50D18C260F54369";
+    const address_r = "0x900A2e2072f14D02dfd3950c0A6fabE105865F3A";
 
     //Constants name. To change if want to use other users
-    const nameUser = "Alessia";
+    const nameUser = "Pasquale";
 
     //User data. Change the accound and private key to use another user
-    const userAccount = accounts[4];
-    const privateKeyUser = "0xfa74c2c8f64e2204ce9e090fe232bfdf8a6f826582f0cdcb57cc7510e407a74b";
+    const userAccount = accounts[5];
+    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
 
     //Hotel data. Change the accound and private key to use another hotel
     const hotelAccount = accounts[1];
@@ -260,14 +260,14 @@ async function main() {
     //Check the review. Uncomment for use different review
     const tempPath = "temp/temp.txt";
     const sentiment = false;
-    // const review = {rec: "L'hotel è veramente sporco! Sconsigliato.",
-    //     sentiment: sentiment
-    // };
+    const review = {rec: "L'hotel è veramente sporco! Sconsigliato.",
+        sentiment: sentiment
+    };
     // const review = {rec: "L'hotel in cui ho soggiornato mi è sembrato molto accogliente. Il personale è stato molto cordiale, ed in generale un ottima esperienza! Raccomando tantissimo.",
     //      sentiment: sentiment
     //  };
-    const review = { rec: "L'hotel non era il massimo!",
-    sentiment: sentiment};
+    // const review = { rec: "L'hotel non era il massimo!",
+    // sentiment: sentiment};
 
     if (review.rec.length < 20 || review.rec.length > 200) {
         console.log("The review must contain between 20 and 200 characters.");

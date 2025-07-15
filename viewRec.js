@@ -1,6 +1,7 @@
 const { Web3 } = require('web3');
 const fs = require('fs');
 const axios = require('axios');
+const { EthrDID } = require('ethr-did');
 
 // Connect to Ganache
 const web3 = new Web3('ws://127.0.0.1:7545');
@@ -9,7 +10,7 @@ const web3 = new Web3('ws://127.0.0.1:7545');
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
 
 // Set contract address GestioniRecensioni
-const contractAddress = '0xc2985daA8C89d12Ced11e4d5e57967F4EAE0Cf39';
+const contractAddress = '0x766dE0367C536136ED099Fb43Ad83391D9EB950E';
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
@@ -31,6 +32,10 @@ async function downloadFromIPFS(cid, outputPath) {
   });
 }
 
+async function generateChallenge(address) {
+    const nonce = Math.floor(Math.random() * 1000000);
+    return `Auth challenge for ${address}: ${nonce}`;
+}
 
 async function main() {
     try{
@@ -40,10 +45,23 @@ async function main() {
 
         //Hotel data
         const hotelAccount = accounts[1];
+        const privateKeyHotel = "0x0b039446a2241a02d745abd0de558356aa8a2711631390ccfcf531b01dcde190";
+        // const check_h = accounts[2];
+        // const privateKey2 = "0x0ff15ece665e3a4ca394ec3c43e97a26eff8e7840de310a79cd1f1767fe8e856";
+
+        // const challenge = await generateChallenge(hotelAccount);
+        // const signedChallenge = await web3.eth.accounts.sign(challenge, privateKeyHotel);
+
+        // const signer = web3.eth.accounts.recover(challenge, signedChallenge.signature);
+
+        // if(signer.toLocaleLowerCase() != hotelAccount.toLocaleLowerCase()){
+        //     console.log("Unauthoraied: The signer is not the hotel");
+        //     return;
+        // }
 
         //Take the active review from the contract and initialize the variable
-        //const cids = await contract.methods.visualizzaRecensioniAttive(hotelAccount).call();
-        const cids = await contract.methods.visualizzaRecensioniHotel(hotelAccount).call({from: accounts[0]});
+        const cids = await contract.methods.visualizzaRecensioniAttive(hotelAccount).call();
+        //const cids = await contract.methods.visualizzaRecensioniHotel(hotelAccount).call({from: accounts[0]});
         let pos = 0;
         let negative = 0;
         let recPos = [];
