@@ -8,8 +8,8 @@ const web3 = new Web3('ws://127.0.0.1:7545');
 // Load ABI
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
 
-// Set contract address (use the one from deployment)
-const contractAddress = '0x60BeCa1ce29f9A423689484052Ad7bAF7FB55229';
+// Set contract address GestioniRecensioni
+const contractAddress = '0xc2985daA8C89d12Ced11e4d5e57967F4EAE0Cf39';
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
@@ -42,7 +42,8 @@ async function main() {
         const hotelAccount = accounts[1];
 
         //Take the active review from the contract and initialize the variable
-        const cids = await contract.methods.visualizzaRecensioniAttive(hotelAccount).call();
+        //const cids = await contract.methods.visualizzaRecensioniAttive(hotelAccount).call();
+        const cids = await contract.methods.visualizzaRecensioniHotel(hotelAccount).call({from: accounts[0]});
         let pos = 0;
         let negative = 0;
         let recPos = [];

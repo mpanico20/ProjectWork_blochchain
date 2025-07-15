@@ -1,13 +1,13 @@
-// Importazione delle librerie necessarie
-const { Web3 } = require('web3'); // Per interagire con Ethereum
-const { EthrDID } = require('ethr-did'); // Per generare DIDs compatibili con Ethereum
+//Library imports
+const { Web3 } = require('web3');
+const { EthrDID } = require('ethr-did');
 const {
-  createVerifiablePresentationJwt, // Per creare la VP (Verifiable Presentation)
+  createVerifiablePresentationJwt,
 } = require('did-jwt-vc');
-const fs = require('fs'); // Per operazioni su file
-const jwt = require('jsonwebtoken'); // Per gestire e decodificare JWT
+const fs = require('fs'); 
+const jwt = require('jsonwebtoken');
 
-// Funzione per creare un oggetto DID (identificativo decentralizzato)
+//Function to create a DID
 async function createDID(address, privateKey, provider, chainID) {
     const ethrDid = new EthrDID({
         identifier: address,
@@ -19,66 +19,63 @@ async function createDID(address, privateKey, provider, chainID) {
     return ethrDid;
 }
 
-// Funzione per creare una Verifiable Presentation (VP) contenente due VC
+//Function to create a VP signed by user
 async function createVP(vcJwt_h, vcJwt_b, subject) {
     const vpPayload = {
         vp: {
-            "@context": ["https://www.w3.org/2018/credentials/v1"], // Contesto standard W3C
-            type: ["VerifiablePresentation"], // Tipo di oggetto VP
-            verifiableCredential: [vcJwt_h, vcJwt_b] // Inserisce le due VCs nella VP
+            "@context": ["https://www.w3.org/2018/credentials/v1"],
+            type: ["VerifiablePresentation"],
+            verifiableCredential: [vcJwt_h, vcJwt_b]
         }
     };
 
-    // Firma della VP usando la chiave privata del soggetto
+    //User sign the VP
     const vpJwt = await createVerifiablePresentationJwt(vpPayload, subject);
     return vpJwt;
 }
 
-// Funzione principale asincrona
 async function main() {
   try {
-    // Connessione al provider Ganache in locale
     const providerUrl = 'HTTP://127.0.0.1:7545';
     const web3 = new Web3(providerUrl);
 
-    // Recupero degli account disponibili e dell'ID della chain
+    // Retrieve accounts and chainId from Ganache
     const accounts = await web3.eth.getAccounts();
     const chainId = await web3.eth.getChainId();
     const provider = web3.currentProvider;
 
-    // Nomi costanti degli attori (hotel e booking) e dell’utente (Marco)
+    //Information to change if want to use different actors
     const hotelName = "Hotel California";
     const bookingName = "Booking";
     const nameUser = "Pasquale";
 
-    // Account e chiave privata dell’utente Marco (accounts[3] di Ganache)
+    //User data
     const userAccount = accounts[5];
     const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
 
-    // Creazione del DID per Marco
+    //Create DID
     const userDID = await createDID(userAccount, privateKeyUser, provider, chainId);
 
-    // Output di debug: DID e indirizzo associato
     console.log("User DID is:", userDID.did);
     console.log("User address:", userDID.address);
 
-    // Percorsi dei file VC associati all’hotel e a Booking
+    //Path for the VCs
     const hotel_vc = `Wallet/${nameUser}/vc_Jwt_${hotelName}.txt`;
     const booking_vc = `Wallet/${nameUser}/vc_Jwt_${bookingName}.txt`;
 
-    // Lettura delle due Verifiable Credentials (VC) da file
+    //Read the VCs
     const vcJwt_h = fs.readFileSync(hotel_vc, 'utf-8');
     const vcJwt_b = fs.readFileSync(booking_vc, 'utf-8');
 
-    // Creazione della Verifiable Presentation (VP) firmata contenente le due VCs
+    //Create the VP
     const vpJwt = await createVP(vcJwt_h, vcJwt_b, userDID);
 
-    // Salvataggio della VP su file per usi futuri (es. modifica o cancellazione recensione)
+    //Save the VP in the user wallet
     const userVP = `Wallet/${nameUser}/vp_Jwt.txt`;
     fs.writeFileSync(userVP, vpJwt, 'utf-8');
+    console.log("VP saved in the wallet:", wallet);
 
   } catch(err) {
-    // Gestione degli eventuali errori a console
     console.log("Error:", err);
   }
 }

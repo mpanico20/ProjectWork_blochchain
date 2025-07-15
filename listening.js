@@ -1,6 +1,6 @@
+//Library imports
 const { Web3 } = require('web3');
 const fs = require('fs');
-const { assertBytes } = require('ethereum-cryptography/utils');
 const axios = require('axios');
 
 // Connect to Ganache
@@ -34,10 +34,6 @@ async function listen() {
     contract_t.events.Transfer()
     .on('data', (event) => {
         console.log('Tranfer Event:', event.returnValues);
-    });
-    contract.events.RispostaInserita()
-    .on('data', (event) => {
-        console.log('Ansewr Event:', event.returnValues);
     });
 }
 

@@ -1,28 +1,24 @@
-// Importazione delle librerie necessarie
-const { Web3 } = require('web3'); // Per interagire con Ethereum
-const { EthrDID } = require('ethr-did'); // Per gestire DIDs
-const { Resolver } = require('did-resolver'); // Risoluzione DIDs
-const ethrDidResolver = require('ethr-did-resolver'); // Resolver specifico per ethr-did
-const fs = require('fs'); // Lettura/scrittura file locali
-const jwt = require('jsonwebtoken'); // Per decodificare JWT
+//Library imports
+const { Web3 } = require('web3');
+const { EthrDID } = require('ethr-did');
+const { Resolver } = require('did-resolver');
+const ethrDidResolver = require('ethr-did-resolver');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
 const {
-  createVerifiableCredentialJwt,
-  createVerifiablePresentationJwt,
   verifyPresentation,
   verifyCredential
 } = require('did-jwt-vc');
 
-// Connessione a Ganache via WebSocket
-const web3 = new Web3('ws://127.0.0.1:7545');
+const web3 = new Web3('HTTP://127.0.0.1:7545');
 
-// Caricamento dell'ABI del contratto e indirizzo
+//Load the ABI of the contract
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
-const contractAddress = '0x60BeCa1ce29f9A423689484052Ad7bAF7FB55229';
+const contractAddress = '0xc2985daA8C89d12Ced11e4d5e57967F4EAE0Cf39';
 
-// Creazione dell'istanza del contratto
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
 
-// Funzione per creare un oggetto DID a partire da indirizzo, chiave privata, provider e chainID
+//Function to create a DID
 async function createDID(address, privateKey, provider, chainID) {
     return new EthrDID({
         identifier: address,
@@ -32,7 +28,7 @@ async function createDID(address, privateKey, provider, chainID) {
     });
 }
 
-// Funzione che verifica l'esistenza della VP e restituisce l'hash associato alla recensione
+//Function to check if VP exist
 async function checkVPExists(vpJwt, subject, issuer_h, didResolver) {
 
 
@@ -67,53 +63,50 @@ async function checkVPExists(vpJwt, subject, issuer_h, didResolver) {
         return;
     }
 
-    // Lettura del file locale che mappa ogni VC ID con un salt segreto
+    //Load the DB fot check the VC id
     const fileIdPath = "DB/idHash.json";
     const idHashFile = fs.readFileSync(fileIdPath, 'utf-8');
     const parseIdHash = JSON.parse(idHashFile);
     const mapIdHash = new Map(Object.entries(parseIdHash));
 
-    // Recupero del salt corrispondente al vcId
+    //Recreate the hash
     const salt = mapIdHash.get(vcId);
     if (!salt) {
-        console.log("Nessuna recensione associata a questa VP.");
+        console.log("No reviews associated with this VP.");
         return null;
     }
 
-    // Combinazione tra vcId e salt e calcolo hash con Keccak256
+    //Combine the vcID and salt to calculate the hash with Keccak256
     const combined = vcId + salt;
-    return Web3.utils.keccak256(combined); // Hash identificativo della recensione
+    return Web3.utils.keccak256(combined);
 }
 
-// Funzione principale asincrona
 async function main() {
-    // Connessione a Ganache via HTTP (usata per ottenere account e chainId)
     const providerUrl = 'HTTP://127.0.0.1:7545';
     const web3 = new Web3(providerUrl);
 
-    const address_r = "0xCB0e1CaBe7FA1605d9e63f92d48f6EE072387A2f"; // <-- replace with the DID contract address
+    //Address for DID contract
+    const address_r = "0xf1Db7CD3fE00D007a04e6987c50D18C260F54369";
 
-    // Recupero degli account e chainId disponibili
+    // Retrieve account from Ganache
     const accounts = await web3.eth.getAccounts();
     const chainId = await web3.eth.getChainId();
     const provider = web3.currentProvider;
 
-    // Dati dell’utente che vuole cancellare la recensione
+    //User data
     const nameUser = "Pasquale";
-    const userAccount = accounts[5]; // L’utente Alessia usa il quinto account di Ganache
-    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21"; // Chiave privata associata
+    const userAccount = accounts[5];
+    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
 
     //Hotel data. Change the accound and private key to use another hotel
     const hotelAccount = accounts[1];
     const privateKeyHotel = "0x0b039446a2241a02d745abd0de558356aa8a2711631390ccfcf531b01dcde190";
 
-    // Creazione del DID per l’utente
+    //Create the DID
     const userDID = await createDID(userAccount, privateKeyUser, provider, chainId);
-
-    // Creazione del DID per l'hotel
     const hotelDID = await createDID(hotelAccount, privateKeyHotel, provider, chainId);
 
-    // Lettura della VP (Verifiable Presentation) da file
+    //Load the VP
     const userVP = `Wallet/${nameUser}/vp_Jwt.txt`;
     const vpJwt = fs.readFileSync(userVP, 'utf-8');
 
@@ -129,11 +122,11 @@ async function main() {
     };
     const didResolver = new Resolver(ethrDidResolver.getResolver(resolverConfig));
 
-    // Calcolo dell’hash della recensione a partire dalla VP
+    //Check the VP
     const hash = await checkVPExists(vpJwt, userDID.did, hotelDID.did, didResolver);
-    if (!hash) return; // Se non esiste hash, interrompi l'esecuzione
+    if (!hash) return;
 
-    // Chiamata alla funzione dello smart contract per cancellare la recensione
+    //Call the function for samrt contract
     await contract_gr.methods.eliminaRecensione(hash).send({ from: accounts[0], gas: 300000 });
     console.log("Review successfully deleted.");
 }

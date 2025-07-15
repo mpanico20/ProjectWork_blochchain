@@ -1,119 +1,112 @@
-// Importazione delle librerie necessarie
-const { Web3 } = require('web3'); // Libreria per interagire con Ethereum
-const { EthrDID } = require('ethr-did'); // Per creare e gestire DIDs su Ethereum
-const { createVerifiableCredentialJwt, verifyCredential } = require('did-jwt-vc'); // Per creare e verificare VC in formato JWT
-const { Resolver } = require('did-resolver'); // Risolutore DID (non usato esplicitamente qui)
-const ethrDidResolver = require('ethr-did-resolver'); // Risolutore per DID di tipo ethr
-const fs = require('fs'); // Per leggere e scrivere file
-const path = require('path'); // Per gestire i percorsi dei file
-const jwt = require('jsonwebtoken'); // Per decodificare i JWT (utile per debugging)
+//Library imports
+const { Web3 } = require('web3');
+const { EthrDID } = require('ethr-did');
+const { createVerifiableCredentialJwt} = require('did-jwt-vc');
+const fs = require('fs');
+const path = require('path');
+const jwt = require('jsonwebtoken');
 
-// Funzione per creare un DID a partire da un indirizzo e chiave privata
+//Function to create a DID
 async function createDID(address, privateKey, provider, chainID) {
     const ethrDid = new EthrDID({
-        identifier: address, // indirizzo Ethereum
-        privateKey,          // chiave privata corrispondente
-        provider: provider,  // provider Web3
-        chainNameOrId: chainID, // id della chain (es. 1337 per Ganache)
+        identifier: address,
+        privateKey,
+        provider: provider,
+        chainNameOrId: chainID,
     });
 
     return ethrDid;
 }
 
-// Genera un ID univoco per la VC di Booking basato su un contatore salvato in file
+//Generate an unique id for a VC
 function generaID(bookingName) {
-  const counterPath = path.join(__dirname, `DB/${bookingName}/counter.json`); // Percorso del contatore
-  const data = JSON.parse(fs.readFileSync(counterPath)); // Lettura contatore corrente
-  const padded = String(data.counter).padStart(4, '0'); // Padding: "0001", "0002", ecc.
-  const id = `http://${bookingName}.example/credentials/${padded}`; // ID fittizio unico della VC
-  data.counter++; // Incremento del contatore
-  fs.writeFileSync(counterPath, JSON.stringify(data, null, 2)); // Salvataggio nuovo valore
-  return id; // Restituisce l'ID generato
+  const counterPath = path.join(__dirname, `DB/${bookingName}/counter.json`);
+  const data = JSON.parse(fs.readFileSync(counterPath));
+  const padded = String(data.counter).padStart(4, '0');
+  const id = `http://${bookingName}.example/credentials/${padded}`;
+  data.counter++;
+  fs.writeFileSync(counterPath, JSON.stringify(data, null, 2));
+  return id;
 }
 
-// Funzione per creare una Verifiable Credential firmata da Booking
+//Function to create a VC signed by hotel
 async function createVCBooking(issuer, subject, checkInDate, checkOutDate, add_hotel, Num_person, bookingName) {
-    // Calcolo numero notti tra check-in e check-out
+    //Set hour 0 to calculate the night 
     checkInDate.setHours(0, 0, 0, 0);
     checkOutDate.setHours(0, 0, 0, 0);
     const release_date = new Date();
     const diffTime = checkOutDate - checkInDate;
-    const num_notti = diffTime / (1000 * 60 * 60 * 24); // Conversione millisecondi in giorni
+    const num_notti = diffTime / (1000 * 60 * 60 * 24);
 
-    // Genera ID unico per la VC
+    //Generate the unique id
     const id = generaID(bookingName);
 
-    // Creazione payload della Verifiable Credential
+    //Payload of Verifiable Credential
     const vcPayload = {
-      sub: subject, // DID dell'utente a cui è riferita la VC
-      nbf: Math.floor(Date.now() / 1000), // Timestamp Unix (inizio validità)
+      sub: subject,
+      nbf: Math.floor(Date.now() / 1000),
 
       vc: {
-        "@context": ["https://www.w3.org/2018/credentials/v1"], // Context VC standard
-        id: id, // ID unico generato
-        type: ["VerifiableCredential", "Bookingx"], // Tipi associati alla VC
-        issuer: issuer.did, // DID di Booking
+        "@context": ["https://www.w3.org/2018/credentials/v1"],
+        id: id,
+        type: ["VerifiableCredential", "Bookingx"],
+        issuer: issuer.did,
         credentialSubject: {
-          id: subject, // DID dell'utente
+          id: subject,
           Book: {
-            Num_person: Num_person,                         // Numero persone nella prenotazione
-            Num_notti: num_notti,                           // Numero notti calcolate
-            CheckIn: checkInDate.toDateString(),            // Data di check-in (stringa leggibile)
-            CheckOut: checkOutDate.toDateString(),          // Data di check-out
-            Add_hotel: add_hotel,                           // Indirizzo Ethereum dell'hotel prenotato
-            Release: release_date                           // Data emissione VC
+            Num_person: Num_person,
+            Num_notti: num_notti,
+            CheckIn: checkInDate.toDateString(),
+            CheckOut: checkOutDate.toDateString(),
+            Add_hotel: add_hotel,
+            Release: release_date
           }
         }
       }
     };
 
-    // Firma della VC usando la chiave privata di Booking
+    //The booking signed the vc
     const vcJwt = await createVerifiableCredentialJwt(vcPayload, issuer);
     return vcJwt;
 }
 
-// Funzione principale asincrona che esegue tutto il processo
 async function main() {
   try {
-    const providerUrl = 'HTTP://127.0.0.1:7545'; // URL di Ganache locale
-    const web3 = new Web3(providerUrl); // Crea un'istanza Web3
-
-    // Ottiene gli account disponibili da Ganache
+    const providerUrl = 'HTTP://127.0.0.1:7545';
+    const web3 = new Web3(providerUrl);
+    
+    // Retrieve accounts and chainId from Ganache
     const accounts = await web3.eth.getAccounts();
-    const chainId = await web3.eth.getChainId(); // ID della rete locale
-    const provider = web3.currentProvider; // Provider corrente
+    const chainId = await web3.eth.getChainId();
+    const provider = web3.currentProvider;
 
-    // Nomi simbolici (modificabili)
-    const bookingName = "Booking"; // Nome della piattaforma Booking
-    const UserName = "Pasquale";      // Nome simbolico dell'utente
+    //Information to change if want to use different actors
+    const bookingName = "Booking";
+    const UserName = "Pasquale";
 
-    // Dati dell'utente (Marco)
+    //User data
     const userAccount = accounts[5];
     const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
 
-    // Dati della piattaforma Booking
+    //Booking data
     const bookingAccount = accounts[9];
     const privateKeyBooking = "0x637b8191a4b48aa684cf97f80b43bfb3f0784a8ee156409583fd529edac40383";
 
-    // Crea DID utente
+    //Create DID
     const userDID = await createDID(userAccount, privateKeyUser, provider, chainId);
-
-    // Crea DID di Booking
     const bookingDID = await createDID(bookingAccount, privateKeyBooking, provider, chainId);
 
-    // Hotel prenotato (rappresentato da un account Ganache)
+    //Booked hotel
     const hotel = accounts[1];
 
-    // Stampa a console i DID generati
     console.log("User DID is:", userDID.did);
     console.log("Booking DID is:", bookingDID.did);
 
-    // Parametri della prenotazione
     const checkInDate = new Date("2025-07-10");
     const checkOutDate = new Date("2025-07-11");
     const num_person = 3;
 
-    // Creazione della Verifiable Credential firmata da Booking per l'utente
+    //Create the vc
     const vcJwt = await createVCBooking(
       bookingDID,
       userDID.did,
@@ -124,17 +117,16 @@ async function main() {
       bookingName
     );
 
-    // Decodifica del JWT (solo per debug, mostra il contenuto)
+    //Decode and print the vc
     const decoded_h = jwt.decode(vcJwt, { complete: true });
     console.log(decoded_h.payload.vc);
 
-    // Salvataggio della VC nel wallet dell’utente
+    //Save the vc in the user wallet
     const wallet = `Wallet/${UserName}/vc_Jwt_${bookingName}.txt`;
     fs.writeFileSync(wallet, vcJwt, 'utf-8');
-    console.log("VC salvata nel wallet:", wallet);
+    console.log("VC saved in the wallet:", wallet);
 
   } catch(err) {
-    // Gestione errori
     console.log("Error:", err);
   }
 }

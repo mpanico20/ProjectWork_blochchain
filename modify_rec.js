@@ -1,33 +1,29 @@
-// Importazione delle librerie necessarie
-const { Web3 } = require('web3'); // Per interagire con Ethereum
-const { EthrDID } = require('ethr-did'); // Per creare un DID conforme a ethr-did
-const { Resolver } = require('did-resolver'); // Per risolvere un DID
-const ethrDidResolver = require('ethr-did-resolver'); // Resolver specifico per ethr-did
-const fs = require('fs'); // Per la gestione del file system
-const jwt = require('jsonwebtoken'); // Per decodificare JSON Web Tokens (VP/VC)
-const crypto = require('crypto'); // Non usato qui, ma può servire per hashing o random
-const axios = require('axios'); // Per fare richieste HTTP (verso IPFS)
-const FormData = require('form-data'); // Per creare il corpo della richiesta multipart/form-data
+//Library imports
+const { Web3 } = require('web3');
+const { EthrDID } = require('ethr-did');
+const { Resolver } = require('did-resolver');
+const ethrDidResolver = require('ethr-did-resolver');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
+const axios = require('axios');
+const FormData = require('form-data');
 const {
-  createVerifiableCredentialJwt,
-  createVerifiablePresentationJwt,
   verifyPresentation,
   verifyCredential
 } = require('did-jwt-vc');
 
-// Connessione a Ganache tramite WebSocket (necessaria per eventi e interazioni live)
+// Connect to Ganache
 const web3 = new Web3('ws://127.0.0.1:7545');
 
-// Caricamento dell'ABI (Application Binary Interface) del contratto smart
+// Load ABI of the 2 contract
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
 
-// Indirizzo del contratto deployato sulla blockchain
-const contractAddress = '0x60BeCa1ce29f9A423689484052Ad7bAF7FB55229';
+//Address for GestioniRecensioni Contract
+const contractAddress = '0xc2985daA8C89d12Ced11e4d5e57967F4EAE0Cf39';
 
-// Istanza del contratto per poter chiamare i metodi pubblici
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
 
-// Funzione per creare un oggetto DID dell'utente
+//Create the DID of the actors
 async function createDID(address, privateKey, provider, chainID) {
     return new EthrDID({
         identifier: address,
@@ -37,27 +33,26 @@ async function createDID(address, privateKey, provider, chainID) {
     });
 }
 
-// Funzione per caricare un file su IPFS tramite API HTTP locale
+//Direct upload function via HTTP POST
 async function uploadToIPFS(filePath) {
     const form = new FormData();
-    form.append('file', fs.createReadStream(filePath)); // Aggiunge il file alla form multipart
+    form.append('file', fs.createReadStream(filePath));
 
     const res = await axios.post('http://localhost:5001/api/v0/add', form, {
         headers: form.getHeaders(),
-        maxBodyLength: Infinity, // IPFS può accettare file grandi
+        maxBodyLength: Infinity,
     });
 
-    // Parsing della risposta (può essere stringa o JSON, a seconda della versione di IPFS)
     let data = res.data;
     if (typeof data === 'string') {
         const lines = data.trim().split('\n');
-        data = JSON.parse(lines[lines.length - 1]); // Prende solo l'ultima riga con i dati
+        data = JSON.parse(lines[lines.length - 1]);
     }
 
-    return data.Hash; // Restituisce il CID (Content Identifier)
+    return data.Hash;
 }
 
-// Funzione che controlla se la VP è valida e calcola l’hash della recensione da modificare
+//Function to check if VP exist
 async function checkVPExists(vpJwt, subject, issuer_h, didResolver) {
 
 
@@ -92,53 +87,52 @@ async function checkVPExists(vpJwt, subject, issuer_h, didResolver) {
         return;
     }
 
-    // Lettura del file locale che mappa ogni VC ID con un salt segreto
+    //Load the DB fot check the VC id
     const fileIdPath = "DB/idHash.json";
     const idHashFile = fs.readFileSync(fileIdPath, 'utf-8');
     const parseIdHash = JSON.parse(idHashFile);
     const mapIdHash = new Map(Object.entries(parseIdHash));
 
-    // Recupero del salt corrispondente al vcId
+    //Take the salt
     const salt = mapIdHash.get(vcId);
     if (!salt) {
         console.log("Nessuna recensione associata a questa VP.");
         return null;
     }
 
-    // Combinazione tra vcId e salt e calcolo hash con Keccak256
+    //Combine the vcID and salt to calculate the hash with Keccak256
     const combined = vcId + salt;
-    return Web3.utils.keccak256(combined); // Hash identificativo della recensione
+    return Web3.utils.keccak256(combined);
 }
 
-// Funzione principale asincrona
 async function main() {
-    // Connessione HTTP a Ganache (usata per getAccounts e getChainId)
     const providerUrl = 'HTTP://127.0.0.1:7545';
     const web3 = new Web3(providerUrl);
 
-    const address_r = "0xCB0e1CaBe7FA1605d9e63f92d48f6EE072387A2f"; // <-- replace with the DID contract address
+    //Address for DID contract
+    const address_r = "0xf1Db7CD3fE00D007a04e6987c50D18C260F54369";
 
-    // Recupero degli account locali e chain ID
+    // Retrieve account from Ganache
     const accounts = await web3.eth.getAccounts();
     const chainId = await web3.eth.getChainId();
     const provider = web3.currentProvider;
 
-    // Dati utente (Alessia) che vuole modificare la recensione
+    //User data
     const nameUser = "Pasquale";
-    const userAccount = accounts[5]; // Account dell’utente
-    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21"; // Chiave privata dell’utente
+    const userAccount = accounts[5];
+    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
     
     //Hotel data. Change the accound and private key to use another hotel
     const hotelAccount = accounts[1];
     const privateKeyHotel = "0x0b039446a2241a02d745abd0de558356aa8a2711631390ccfcf531b01dcde190";
 
-    // Creazione del DID per l’utente
+    //Create user DID
     const userDID = await createDID(userAccount, privateKeyUser, provider, chainId);
 
-    // Creazione del DID per l'hotel
+    //Create hotel DID
     const hotelDID = await createDID(hotelAccount, privateKeyHotel, provider, chainId);
 
-    // Lettura della Verifiable Presentation dell’utente da file
+    //Louad the VP
     const userVP = `Wallet/${nameUser}/vp_Jwt.txt`;
     const vpJwt = fs.readFileSync(userVP, 'utf-8');
 
@@ -154,30 +148,29 @@ async function main() {
     };
     const didResolver = new Resolver(ethrDidResolver.getResolver(resolverConfig));
 
-    // Verifica della VP ed estrazione dell’hash della recensione
+    //Check if VP exist
     const hash = await checkVPExists(vpJwt, userDID.did, hotelDID.did, didResolver);
-    if (!hash) return; // Se non c'è hash, la recensione non è valida/modificabile
+    if (!hash) return;
 
-    // Nuova recensione da sostituire
+    //Review
     const nuovaRecensione = {rec: "L'hotel è veramente sporco! E il personale davvero incompetente. Sconsigliato."};
 
-    // Controllo di lunghezza testo (business rule: tra 20 e 200 caratteri)
+    //Check the review
     if (nuovaRecensione.rec.length < 20 || nuovaRecensione.rec.length > 200) {
-        console.log("La recensione deve contenere tra 20 e 200 caratteri.");
+        console.log("The review must contain between 20 and 200 characters.");
         return;
     }
 
-    // Scrittura temporanea del contenuto della recensione su file (necessario per IPFS)
+    //Uploading the review on IPFS
     const tempPath = "temp/temp.txt";
     fs.writeFileSync(tempPath, JSON.stringify(nuovaRecensione), 'utf-8');
 
-    // Upload su IPFS e ottenimento del CID (Content Identifier)
     const cid = await uploadToIPFS(tempPath);
-    if (!cid) return; // Se l'upload fallisce, uscita
+    if (!cid) return;
 
-    // Chiamata alla funzione dello smart contract per modificare la recensione (identificata tramite hash)
+    //Call the smart contract
     await contract_gr.methods.modificaRecensione(hash, cid).send({ from: accounts[0], gas: 300000 });
-    console.log("Recensione modificata con successo.");
+    console.log("Review successfully updated.");
 }
 
 main().catch(console.error);

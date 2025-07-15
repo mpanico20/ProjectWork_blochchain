@@ -1,1 +1,1 @@
-{"rec":"L'hotel in cui ho soggiornato mi è sembrato molto accogliente. Il personale è stato molto cordiale, ed in generale un ottima esperienza! Raccomando tantissimo.","sentiment":true}
+{"anw":"Si buon tu! Ma ti sei visto!"}

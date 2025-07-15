@@ -1,8 +1,7 @@
+//Library imports
 const { Web3 } = require('web3');
 const { EthrDID } = require('ethr-did');
 const {
-  createVerifiableCredentialJwt,
-  createVerifiablePresentationJwt,
   verifyPresentation,
   verifyCredential
 } = require('did-jwt-vc');
@@ -15,15 +14,15 @@ const axios = require('axios');
 const FormData = require('form-data');
 
 // Connect to Ganache
-const web3 = new Web3('ws://127.0.0.1:7545');
+const web3 = new Web3('HTTP://127.0.0.1:7545');
 
 // Load ABI of the 2 contract
 const abi = JSON.parse(fs.readFileSync('contract/GestioniRecensioni/GestioneRecensioniAbi.json', 'utf8'));
 const abi_t = JSON.parse(fs.readFileSync('contract/Token/MyTokenAbi.json', 'utf8'));
 
 // Set contract address (use the one from deployment)
-const contractAddress = '0x60BeCa1ce29f9A423689484052Ad7bAF7FB55229';
-const contractAddress_t = "0x22224949051241c529417F31430A948cE2d4568c";
+const contractAddress = '0xc2985daA8C89d12Ced11e4d5e57967F4EAE0Cf39';
+const contractAddress_t = "0x07dA6266FA4D74b5a8444CCa90B251CdC23c11eF";
 
 const contract_gr = new web3.eth.Contract(abi, contractAddress);
 const contract_tk = new web3.eth.Contract(abi_t, contractAddress_t);
@@ -199,14 +198,15 @@ async function main() {
     const chainId = await web3.eth.getChainId();
     const provider = web3.currentProvider;
 
-    const address_r = "0xCB0e1CaBe7FA1605d9e63f92d48f6EE072387A2f"; // <-- replace with the DID contract address
+    //Adress for DID conrtacr
+    const address_r = "0xf1Db7CD3fE00D007a04e6987c50D18C260F54369";
 
     //Constants name. To change if want to use other users
-    const nameUser = "Pasquale";
+    const nameUser = "Alessia";
 
     //User data. Change the accound and private key to use another user
-    const userAccount = accounts[5];
-    const privateKeyUser = "0x333cd7a33a9f0154095c5a1366625160564cd472acd21284ae68d4e44352de21";
+    const userAccount = accounts[4];
+    const privateKeyUser = "0xfa74c2c8f64e2204ce9e090fe232bfdf8a6f826582f0cdcb57cc7510e407a74b";
 
     //Hotel data. Change the accound and private key to use another hotel
     const hotelAccount = accounts[1];
@@ -260,17 +260,17 @@ async function main() {
     //Check the review. Uncomment for use different review
     const tempPath = "temp/temp.txt";
     const sentiment = false;
-    const review = {rec: "L'hotel è veramente sporco! Sconsigliato.",
-        sentiment: sentiment
-    };
+    // const review = {rec: "L'hotel è veramente sporco! Sconsigliato.",
+    //     sentiment: sentiment
+    // };
     // const review = {rec: "L'hotel in cui ho soggiornato mi è sembrato molto accogliente. Il personale è stato molto cordiale, ed in generale un ottima esperienza! Raccomando tantissimo.",
     //      sentiment: sentiment
     //  };
-    //const review = { rec: "L'hotel non era il massimo!",
-    //sentiment: sentiment};
+    const review = { rec: "L'hotel non era il massimo!",
+    sentiment: sentiment};
 
     if (review.rec.length < 20 || review.rec.length > 200) {
-        console.log("La recensione deve contenere tra 20 e 200 caratteri.");
+        console.log("The review must contain between 20 and 200 characters.");
         return;
     }
 
@@ -285,7 +285,7 @@ async function main() {
         return;
     }
 
-    console.log("Cid ottenuto:", cid);
+    console.log("Cid obtained:", cid);
 
     console.log("Calling smart contract for insert the review...");
 
@@ -297,7 +297,7 @@ async function main() {
 
     //Check the user balance after the transfer
     balance = await contract_tk.methods.balanceOf(userDID.address).call();
-    console.log('User balance::', web3.utils.fromWei(balance, 'ether'));
+    console.log('User balance:', web3.utils.fromWei(balance, 'ether'));
 
 
   } catch(err) {
